@@ -14,14 +14,16 @@ void distribuiArquivos();
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
+    if (argc < 4)
     {
-        printf("Informe a quantidade de usuarios como argumento!\n");
+        printf("Informe a quantidade de usuarios, quantidade de arquivos, tamanho do fragmento de arquivo e tamanho do buffer como argumento!\n");
         return 1;
     }
 
     int usuarios = atoi(argv[1]);
     int max_arquivos = atoi(argv[2]);
+    int tamanhoFragmento = atoi(argv[3]);
+    int tamanhoBuffer = atoi(argv[4]);
 
     if (usuarios <= 0 || usuarios > MAX_USUARIOS)
     {
@@ -35,7 +37,9 @@ int main(int argc, char *argv[])
     }
 
     criarDiretoriosUsuarios(usuarios);
-    distribuiArquivos(usuarios);
+    distribuiArquivos(usuarios, tamanhoFragmento);
+
+    
 
     return 0;
 }
@@ -55,7 +59,7 @@ void criarDiretoriosUsuarios(int usuarios)
     }
 }
 
-void distribuiArquivos(int usuarios)
+void distribuiArquivos(int usuarios, int tamanhoFragmento)
 {
     // representa uma entrada no diretório
     struct dirent *entry;
