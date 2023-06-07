@@ -5,7 +5,7 @@ MAIN := main
 OBJECTS := main.o
 
 # Flags de compilação para C
-FLAGS := -Wall -Wextra -std=c11 -pedantic-errors
+FLAGS := -Wall -Wextra -std=c11 -pedantic-errors -pthread
 
 # necessário apenas quando se incluir a biblioteca <math.h> em algum arquivo fonte no projeto
 MATH := -lm
