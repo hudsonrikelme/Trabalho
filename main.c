@@ -42,7 +42,7 @@ void *usuario_thread(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 5) {
+    if (argc < 4) {
         printf("Informe a quantidade de usuarios, quantidade de arquivos, tamanho do fragmento de arquivo e tamanho do buffer como argumento!\n");
         return 1;
     }
@@ -51,6 +51,12 @@ int main(int argc, char *argv[]) {
     int max_arquivos = atoi(argv[2]);
     /*int tmn_Fragmento = atoi(argv[3]);
     int tmn_Buffer = atoi(argv[4]);*/
+    //Define os nomes de todos os arquivos existentes
+    const char* arquivos[MAX_ARQUIVOS] = {
+        "file1.csv", "file2.csv", "file3.csv", "file4.csv",
+        "file5.csv", "file6.csv", "file7.csv", "file8.csv",
+        "file9.csv", "file10.csv", "file11.csv", "file12.csv"
+    }; 
 
     if (usuarios <= 0 || usuarios > MAX_USUARIOS) {
         printf("Quantidade de usuários invalida!\n");
@@ -61,12 +67,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+
+
+
     pthread_t threads[MAX_USUARIOS];
     char diretorio[4];
-
-
-    //Mutex iniciado
-    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mutex, NULL); //Mutex iniciado
 
     // Criação das threads dos usuários
     for (int i = 0; i < usuarios; i++) {
@@ -80,6 +86,13 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < usuarios; i++) {
         pthread_join(threads[i], NULL);
     }
+
+
+
+
+
+
+
 
 
     pthread_mutex_destroy(&mutex); //Destroi o mutex
