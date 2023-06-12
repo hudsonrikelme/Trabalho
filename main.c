@@ -9,14 +9,14 @@
 
 #define MAX_USUARIOS 5
 #define MAX_ARQUIVOS 12
-#define MAX_NOME_ARQUIVO 256
+#define MAX_NOME_ARQUIVO 12
 
 pthread_mutex_t mutex; // Declaração do mutex
 
 void *usuario_thread(void *arg)
 {
     char *diretorio = (char *)arg;
-
+    //pthread_t threads_arquivos[MAX_ARQUIVOS];
     // Abre o diretório
     DIR *dir = opendir(diretorio);
     if (dir == NULL)
@@ -43,31 +43,35 @@ void *usuario_thread(void *arg)
             printf("[%s] Arquivos Existentes -> %s\n", diretorio, entry->d_name);
             pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 
-            // Compara arquivo com a lista de todos os arquivos
-            pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
-            
+            // Entende quais arquivos estão ausentes
             for (int i = 0; i < MAX_ARQUIVOS; i++)
             {
                 if (strcmp(entry->d_name, arquivos_ausentes[i]) == 0)
                 {
                     arquivos_ausentes[i][0] = '\0';
                     break;
-                }
-                
+                } 
             }
-            pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
         }
     }
-
-    // Teste Ausentes
+    // Analisa quais arquivos o usuário não tem
     pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
-
     for (int i = 0; i < MAX_ARQUIVOS; i++)
     {
         if(arquivos_ausentes[i][0] != '\0')
         printf("[%s] Arquivos Ausentes -> %s\n", diretorio, arquivos_ausentes[i]);
+
+        /*char *diretorio_thread = malloc(strlen(diretorio) + 1); // Aloca memória para o nome do diretório
+        strcpy(diretorio_thread, diretorio);
+        pthread_create(&threads[i], NULL, usuario_thread, diretorio_thread);*/
     }
     printf("\n");
+    // Aguarda a finalização das threads dos arquivos
+    /*for (int i = 0; i < usuarios; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+*/
 
     pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 
@@ -77,6 +81,14 @@ void *usuario_thread(void *arg)
     pthread_exit(NULL);
     return NULL;
 }
+
+/*void solicitar_arquivo(const char *nome_arquivo){
+
+
+
+}*/
+
+
 
 int main(int argc, char *argv[])
 {
