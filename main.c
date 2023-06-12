@@ -28,16 +28,10 @@ void *usuario_thread(void *arg)
 
     struct dirent *entry;
     // Define os nomes de todos os arquivos existentes
-    const char *arquivos[MAX_ARQUIVOS] = {
+    char arquivos_ausentes[MAX_ARQUIVOS][MAX_NOME_ARQUIVO] = {
         "file1.csv", "file2.csv", "file3.csv", "file4.csv",
         "file5.csv", "file6.csv", "file7.csv", "file8.csv",
         "file9.csv", "file10.csv", "file11.csv", "file12.csv"};
-    // Vetor para armazenar os arquivos ausentes
-    char *arq_ausentes[MAX_ARQUIVOS];
-    int num_ausentes = 0;
-    // inicializa o vetor
-    for (int i = 0; i < MAX_ARQUIVOS; i++)
-        arq_ausentes[i] = NULL;
 
     // Lê cada entrada do diretório usando a função readdir
     while ((entry = readdir(dir)) != NULL)
@@ -50,19 +44,18 @@ void *usuario_thread(void *arg)
             pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 
             // Compara arquivo com a lista de todos os arquivos
+            pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+            
             for (int i = 0; i < MAX_ARQUIVOS; i++)
             {
-                if (strcmp(entry->d_name, arquivos[i]) == 0)
+                if (strcmp(entry->d_name, arquivos_ausentes[i]) == 0)
                 {
-
+                    arquivos_ausentes[i][0] = '\0';
                     break;
                 }
-                else
-                {
-                    arq_ausentes[i] = entry->d_name;
-                    num_ausentes++;
-                }
+                
             }
+            pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
         }
     }
 
@@ -71,7 +64,8 @@ void *usuario_thread(void *arg)
 
     for (int i = 0; i < MAX_ARQUIVOS; i++)
     {
-        printf("[%s] Arquivos Ausentes -> %s\n", diretorio, arq_ausentes[i]);
+        if(arquivos_ausentes[i][0] != '\0')
+        printf("[%s] Arquivos Ausentes -> %s\n", diretorio, arquivos_ausentes[i]);
     }
     printf("\n");
 
