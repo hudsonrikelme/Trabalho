@@ -77,8 +77,6 @@ void *usuario_thread(void *arg)
 
     pthread_t threads_arquivos[MAX_ARQUIVOS];
     // Analisa quais arquivos o usuário não tem
-
-
     int count = 0;
     for (int i = 0; i < MAX_ARQUIVOS; i++)
     {
@@ -91,8 +89,10 @@ void *usuario_thread(void *arg)
 
             char *arquivo_ausente = malloc(strlen(arquivos_ausentes[i]) + 1);
             strcpy(arquivo_ausente, arquivos_ausentes[i]);
-            pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
+
             
+
+            pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);    
             count++;
         }
     }
