@@ -9,15 +9,34 @@
 
 #define MAX_USUARIOS 5
 #define MAX_ARQUIVOS 12
-#define MAX_NOME_ARQUIVO 12
+#define MAX_NOME_ARQUIVO 100
 
 pthread_mutex_t mutex; // Declaração do mutex
+
+/*void solicitar_arquivo(const char *nome_arquivo)
+{
+
+    printf("%s", nome_arquivo);
+}*/
+
+void *receber_arquivo_thread(void *arg)
+{
+    char *nome_arquivo = (char *)arg;
+    // Realiza a solicitação do arquivo que o usuario nao possui
+    //solicitar_arquivo(nome_arquivo);
+    printf("%s", nome_arquivo);
+    free(nome_arquivo);
+    pthread_exit(NULL);
+    return NULL;
+}
+
+
 
 void *usuario_thread(void *arg)
 {
     char *diretorio = (char *)arg;
-    //pthread_t threads_arquivos[MAX_ARQUIVOS];
-    // Abre o diretório
+    // pthread_t threads_arquivos[MAX_ARQUIVOS];
+    //  Abre o diretório
     DIR *dir = opendir(diretorio);
     if (dir == NULL)
     {
@@ -50,30 +69,41 @@ void *usuario_thread(void *arg)
                 {
                     arquivos_ausentes[i][0] = '\0';
                     break;
-                } 
+                }
             }
         }
     }
+
+    pthread_t threads_arquivos[MAX_ARQUIVOS];
     // Analisa quais arquivos o usuário não tem
-    pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+
+
+    int count = 0;
     for (int i = 0; i < MAX_ARQUIVOS; i++)
     {
-        if(arquivos_ausentes[i][0] != '\0')
-        printf("[%s] Arquivos Ausentes -> %s\n", diretorio, arquivos_ausentes[i]);
+        if (arquivos_ausentes[i][0] != '\0')
+        {
+            pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+            printf("[%s] Arquivos Ausentes -> %s\n", diretorio, arquivos_ausentes[i]);
+            pthread_mutex_unlock(&mutex);
 
-        /*char *diretorio_thread = malloc(strlen(diretorio) + 1); // Aloca memória para o nome do diretório
-        strcpy(diretorio_thread, diretorio);
-        pthread_create(&threads[i], NULL, usuario_thread, diretorio_thread);*/
+
+            char *arquivo_ausente = malloc(strlen(arquivos_ausentes[i]) + 1);
+            strcpy(arquivo_ausente, arquivos_ausentes[i]);
+
+            pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
+            
+            count++;
+        }
     }
     printf("\n");
-    // Aguarda a finalização das threads dos arquivos
-    /*for (int i = 0; i < usuarios; i++)
-    {
-        pthread_join(threads[i], NULL);
-    }
-*/
 
-    pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
+    // Aguarda a finalização das threads dos arquivos
+    for (int i = 0; i < count; i++)
+    {
+        pthread_join(threads_arquivos[i], NULL);
+    }
+
 
     // Diretorio fechado
     closedir(dir);
@@ -81,14 +111,6 @@ void *usuario_thread(void *arg)
     pthread_exit(NULL);
     return NULL;
 }
-
-/*void solicitar_arquivo(const char *nome_arquivo){
-
-
-
-}*/
-
-
 
 int main(int argc, char *argv[])
 {
