@@ -9,22 +9,23 @@
 
 #define MAX_USUARIOS 5
 #define MAX_ARQUIVOS 12
-#define MAX_NOME_ARQUIVO 100
+#define MAX_NOME_ARQUIVO 250
 
 pthread_mutex_t mutex; // Declaração do mutex
 
-/*void solicitar_arquivo(const char *nome_arquivo)
+void solicitar_arquivo(const char *nome_arquivo)
 {
+    /*pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+    printf("TESTE Solicitar aquivo: %s", nome_arquivo);
+    pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir*/
 
-    printf("%s", nome_arquivo);
-}*/
+}
 
 void *receber_arquivo_thread(void *arg)
 {
     char *nome_arquivo = (char *)arg;
     // Realiza a solicitação do arquivo que o usuario nao possui
-    //solicitar_arquivo(nome_arquivo);
-    printf("%s", nome_arquivo);
+    solicitar_arquivo(nome_arquivo);
     free(nome_arquivo);
     pthread_exit(NULL);
     return NULL;
@@ -90,7 +91,6 @@ void *usuario_thread(void *arg)
 
             char *arquivo_ausente = malloc(strlen(arquivos_ausentes[i]) + 1);
             strcpy(arquivo_ausente, arquivos_ausentes[i]);
-
             pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
             
             count++;
