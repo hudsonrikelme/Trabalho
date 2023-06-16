@@ -27,7 +27,7 @@ Usuario usuarios[MAX_USUARIOS];
 void solicitar_arquivo(const char *nome_arquivo)
 {
     pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
-    printf("TESTE Solicitar aquivo: %s\n", nome_arquivo);
+    printf("TESTE Solicitar arquivo: %s\n", nome_arquivo);
     pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 }
 
@@ -45,7 +45,7 @@ void *usuario_thread(void *arg)
 {
     Usuario *usuario = (Usuario *)arg;
     char *diretorio = usuario->nome;
-    // pthread_t threads_arquivos[MAX_ARQUIVOS];
+    //pthread_t threads_arquivos[MAX_ARQUIVOS];
     //  Abre o diretório
 
     DIR *dir = opendir(diretorio);
@@ -101,7 +101,7 @@ void *usuario_thread(void *arg)
         }
     }
 
-    /*pthread_t threads_arquivos[MAX_ARQUIVOS];
+    pthread_t threads_arquivos[MAX_ARQUIVOS];
     // Analisa quais arquivos o usuário não tem e cria as threads de solicitação de arquivos
     int count = 0;
     int num_solicitacao = rand() % MAX_ARQUIVOS + 1;
@@ -109,11 +109,11 @@ void *usuario_thread(void *arg)
     for (int i = 0; i < num_solicitacao; i++)
     {
         int random_index = rand() % MAX_ARQUIVOS;
-        if (arquivos_ausentes[random_index][0] != '\0')
+        if (arquivos_desejados[random_index][0] != '\0')
         {
 
-            char *arquivo_ausente = malloc(strlen(arquivos_ausentes[random_index]) + 1);
-            strcpy(arquivo_ausente, arquivos_ausentes[random_index]);
+            char *arquivo_ausente = malloc(strlen(arquivos_desejados[random_index]) + 1);
+            strcpy(arquivo_ausente, arquivos_desejados[random_index]);
             pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
             count++;
         }
@@ -125,7 +125,7 @@ void *usuario_thread(void *arg)
     {
         pthread_join(threads_arquivos[i], NULL);
     }
-*/
+
     // Diretorio fechado
     closedir(dir);
     free(diretorio);
