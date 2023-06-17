@@ -43,25 +43,25 @@ typedef struct
     int tmn_buffer;
 } ThreadArgs;
 
-Arquivo total_arquivos[MAX_ARQUIVOS];
+typedef struct{
+    Arquivo arquivo;
+    int total_arquivos;
+}QuantidadeArquivo;
+
+QuantidadeArquivo arquivos_t[MAX_ARQUIVOS];
 
 Solicitacao solicitacoes;
 
 Usuario usuarios[MAX_USUARIOS];
 
-
-
 /**
  * to do
  * Função que divide o arquivo em fragmentos iguais
- * 
-*/
-/*void divide_fragmentos(int tmn_fragmento, char *nome){
-    
-
+ *
+ */
+void divide_fragmentos(int tmn_fragmento, char *nome)
+{
 }
-*/
-
 
 void solicitar_arquivo(const char *nome_arquivo)
 {
@@ -70,6 +70,11 @@ void solicitar_arquivo(const char *nome_arquivo)
     pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 }
 
+/**
+ *
+ * Não sei se vai ser necessária essa função intermediária
+ *
+ */
 void *receber_arquivo_thread(void *arg)
 {
     char *nome_arquivo = (char *)arg;
@@ -79,6 +84,7 @@ void *receber_arquivo_thread(void *arg)
     pthread_exit(NULL);
     return NULL;
 }
+
 /**
  *
  * Entende quais arquivos o usuario não tem
@@ -87,7 +93,6 @@ void *receber_arquivo_thread(void *arg)
 
 void ausentes_diretorio(Usuario *usuario)
 {
-
     /*
         // Entende quais arquivos estão ausentes
         for (int i = 0; i < MAX_ARQUIVOS; i++)
@@ -111,6 +116,36 @@ void ausentes_diretorio(Usuario *usuario)
                 pthread_mutex_unlock(&mutex);
             }
         }*/
+}
+
+void arquivos_totais(Usuario *usuario)
+{
+    pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+    for (int j = 0; j < usuario->num_arquivos; j++)
+    {
+        int encontrado = 0;
+        for (int k = 0; k < arquivos_t->total_arquivos; k++)
+        {
+            if (strcmp(usuario->arquivos[j].nome, arquivos_t[k].arquivo.nome) == 0)
+            {
+                encontrado = 1;
+                break;
+            }
+        }
+        if (!encontrado)
+        {
+            
+            strcpy(arquivos_t[arquivos_t->total_arquivos].arquivo.nome, usuario->arquivos[j].nome);
+            
+
+            /*Teste Ausentes*/
+            printf("Arquivos Totais -> %s\n", arquivos_t[arquivos_t->total_arquivos].arquivo.nome);
+            arquivos_t->total_arquivos++;
+            
+        }
+    }
+    printf("Numero total de arquivos: %d\n", arquivos_t->total_arquivos);
+    pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
 }
 
 /**
@@ -148,7 +183,7 @@ void *usuario_thread(void *arg)
         {
             pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
             // Teste obs. Excluir depois
-            //divide_fragmentos(tmn_fragmento, usuario->arquivos->nome);
+            // divide_fragmentos(tmn_fragmento, usuario->arquivos->nome);
             printf("[%s] Arquivos Existentes -> %s\n", usuario->nome, entry->d_name);
             strcpy(usuario->arquivos[usuario->num_arquivos].nome, entry->d_name);
             usuario->num_arquivos++;
@@ -156,6 +191,7 @@ void *usuario_thread(void *arg)
             pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
         }
     }
+    arquivos_totais(usuario);
     ausentes_diretorio(usuario);
 
     /*
@@ -222,39 +258,6 @@ int avaliacao_requisitos(int num_usuarios, int max_arquivos, int tmn_fragmento, 
     return 0;
 }
 
-void arquivos_totais(int num_usuarios)
-{
-    int numero_total_arquivos = 0;
-
-    for (int i = 0; i < num_usuarios; i++)
-    {
-        Usuario *usuario = &usuarios[i];
-        for (int j = 0; j < usuario->num_arquivos; j++)
-        {
-            int encontrado = 0;
-            for (int k = 0; k < MAX_ARQUIVOS; k++)
-            {
-                if (strcmp(usuario->arquivos[j].nome, total_arquivos[k].nome) == 0)
-                {
-                    encontrado = 1;
-                    break;
-                }
-            }
-            if (!encontrado)
-            {
-                pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
-                strcpy(total_arquivos[numero_total_arquivos].nome, usuario->arquivos[j].nome);
-                numero_total_arquivos++;
-
-                /*Teste Ausentes*/
-                printf("Arquivos Totais -> %s\n", total_arquivos[numero_total_arquivos].nome);
-
-                pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
-            }
-        }
-    }
-}
-
 int main(int argc, char *argv[])
 {
     if (argc < 4)
@@ -271,8 +274,6 @@ int main(int argc, char *argv[])
     {
         return 1;
     }
-
-    arquivos_totais(num_usuarios);
 
     srand(time(0)); // Inicializa a semente de números aleatórios
     pthread_t threads[num_usuarios];
