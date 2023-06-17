@@ -17,15 +17,16 @@ pthread_mutex_t mutex; // Declaração do mutex
 typedef struct
 {
     char nome[MAX_NOME_ARQUIVO];
-    // int fragmentos;
+    int fragmentos;
 } Arquivo;
 
 typedef struct
 {
     char nome[10];
     Arquivo arquivos[MAX_ARQUIVOS];
-    char ausentes[MAX_ARQUIVOS][MAX_NOME_ARQUIVO];
+    Arquivo ausentes[MAX_ARQUIVOS];
     int num_arquivos;
+    int num_ausentes;
 } Usuario;
 
 typedef struct
@@ -35,16 +36,32 @@ typedef struct
     struct solicitacoes *proximo;
 } Solicitacao;
 
-typedef struct{
+typedef struct
+{
     Usuario *usuario;
     int tmn_fragmento;
     int tmn_buffer;
-}ThreadArgs;
+} ThreadArgs;
 
+Arquivo total_arquivos[MAX_ARQUIVOS];
 
 Solicitacao solicitacoes;
 
 Usuario usuarios[MAX_USUARIOS];
+
+
+
+/**
+ * to do
+ * Função que divide o arquivo em fragmentos iguais
+ * 
+*/
+/*void divide_fragmentos(int tmn_fragmento, char *nome){
+    
+
+}
+*/
+
 
 void solicitar_arquivo(const char *nome_arquivo)
 {
@@ -62,19 +79,51 @@ void *receber_arquivo_thread(void *arg)
     pthread_exit(NULL);
     return NULL;
 }
+/**
+ *
+ * Entende quais arquivos o usuario não tem
+ *
+ */
 
+void ausentes_diretorio(Usuario *usuario)
+{
+
+    /*
+        // Entende quais arquivos estão ausentes
+        for (int i = 0; i < MAX_ARQUIVOS; i++)
+        {
+            bool ausente = true;
+            for (int j = 0; j < usuario->num_arquivos; j++)
+            {
+                if (strcmp(usuario->arquivos[j].nome, arquivos_desejados[i]) == 0)
+                {
+                    ausente = false;
+                    break;
+                }
+            }
+            if (ausente)
+            {
+                strcpy(usuario->ausentes[usuario->num_arquivos].nome, arquivos_desejados[i]);
+                usuario->num_arquivos++;
+
+                pthread_mutex_lock(&mutex);
+                printf("[%s] Arquivos Desejados -> %s\n", diretorio, usuario->ausentes->nome);
+                pthread_mutex_unlock(&mutex);
+            }
+        }*/
+}
 
 /**
- * 
+ *
  * Thread de Usuario
- * 
-*/
+ *
+ */
 void *usuario_thread(void *arg)
 {
     ThreadArgs *args = (ThreadArgs *)arg;
     Usuario *usuario = args->usuario;
-    //int tmn_fragmento = args->tmn_fragmento;
-    //int tmn_buffer = args->tmn_buffer;
+    // int tmn_fragmento = args->tmn_fragmento;
+    // int tmn_buffer = args->tmn_buffer;
 
     char *diretorio = usuario->nome;
     // pthread_t threads_arquivos[MAX_ARQUIVOS];
@@ -90,12 +139,6 @@ void *usuario_thread(void *arg)
     }
 
     struct dirent *entry;
-    // Define os nomes de todos os arquivos existentes
-    char arquivos_desejados[MAX_ARQUIVOS][MAX_NOME_ARQUIVO] = {
-        "file1.csv", "file2.csv", "file3.csv", "file4.csv",
-        "file5.csv", "file6.csv", "file7.csv", "file8.csv",
-        "file9.csv", "file10.csv", "file11.csv", "file12.csv"};
-
 
     // Lê cada entrada do diretório usando a função readdir
     while ((entry = readdir(dir)) != NULL)
@@ -105,61 +148,42 @@ void *usuario_thread(void *arg)
         {
             pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
             // Teste obs. Excluir depois
-            printf("[%s] Arquivos Existentes -> %s\n", diretorio, entry->d_name);
+            //divide_fragmentos(tmn_fragmento, usuario->arquivos->nome);
+            printf("[%s] Arquivos Existentes -> %s\n", usuario->nome, entry->d_name);
             strcpy(usuario->arquivos[usuario->num_arquivos].nome, entry->d_name);
             usuario->num_arquivos++;
+
             pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
         }
     }
+    ausentes_diretorio(usuario);
 
-    // Entende quais arquivos estão ausentes
-    for (int i = 0; i < MAX_ARQUIVOS; i++)
-    {
-        bool ausente = true;
-        for (int j = 0; j < usuario->num_arquivos; j++)
+    /*
+        pthread_t threads_arquivos[MAX_ARQUIVOS];
+        // Analisa quais arquivos o usuário não tem e cria as threads de solicitação de arquivos
+        int count = 0;
+        int num_solicitacao = rand() % MAX_ARQUIVOS + 1;
+
+        for (int i = 0; i < num_solicitacao; i++)
         {
-            if (strcmp(usuario->arquivos[j].nome, arquivos_desejados[i]) == 0)
+            int random_index = rand() % MAX_ARQUIVOS;
+            if (arquivos_desejados[random_index][0] != '\0')
             {
-                ausente = false;
-                break;
+
+                char *arquivo_ausente = malloc(strlen(arquivos_desejados[random_index]) + 1);
+                strcpy(arquivo_ausente, arquivos_desejados[random_index]);
+                pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
+                count++;
             }
         }
-        if (ausente)
+        printf("\n");
+
+        // Aguarda a finalização das threads dos arquivos
+        for (int i = 0; i < count; i++)
         {
-            strcpy(usuario->ausentes[usuario->num_arquivos], arquivos_desejados[i]);
-            usuario->num_arquivos++;
-
-            pthread_mutex_lock(&mutex);
-            printf("[%s] Arquivos Desejados -> %s\n", diretorio, arquivos_desejados[i]);
-            pthread_mutex_unlock(&mutex);
+            pthread_join(threads_arquivos[i], NULL);
         }
-    }
-
-
-    pthread_t threads_arquivos[MAX_ARQUIVOS];
-    // Analisa quais arquivos o usuário não tem e cria as threads de solicitação de arquivos
-    int count = 0;
-    int num_solicitacao = rand() % MAX_ARQUIVOS + 1;
-
-    for (int i = 0; i < num_solicitacao; i++)
-    {
-        int random_index = rand() % MAX_ARQUIVOS;
-        if (arquivos_desejados[random_index][0] != '\0')
-        {
-
-            char *arquivo_ausente = malloc(strlen(arquivos_desejados[random_index]) + 1);
-            strcpy(arquivo_ausente, arquivos_desejados[random_index]);
-            pthread_create(&threads_arquivos[i], NULL, receber_arquivo_thread, arquivo_ausente);
-            count++;
-        }
-    }
-    printf("\n");
-
-    // Aguarda a finalização das threads dos arquivos
-    for (int i = 0; i < count; i++)
-    {
-        pthread_join(threads_arquivos[i], NULL);
-    }
+    */
 
     // Diretorio fechado
     closedir(dir);
@@ -168,13 +192,11 @@ void *usuario_thread(void *arg)
     return NULL;
 }
 
-
-
 /**
- * 
+ *
  * Avalia quantidade de cada argumento de acordo com os limites pré-estabelecidos
- * 
-*/
+ *
+ */
 int avaliacao_requisitos(int num_usuarios, int max_arquivos, int tmn_fragmento, int tmn_buffer)
 {
     if (num_usuarios <= 0 || num_usuarios > MAX_USUARIOS)
@@ -200,6 +222,39 @@ int avaliacao_requisitos(int num_usuarios, int max_arquivos, int tmn_fragmento, 
     return 0;
 }
 
+void arquivos_totais(int num_usuarios)
+{
+    int numero_total_arquivos = 0;
+
+    for (int i = 0; i < num_usuarios; i++)
+    {
+        Usuario *usuario = &usuarios[i];
+        for (int j = 0; j < usuario->num_arquivos; j++)
+        {
+            int encontrado = 0;
+            for (int k = 0; k < MAX_ARQUIVOS; k++)
+            {
+                if (strcmp(usuario->arquivos[j].nome, total_arquivos[k].nome) == 0)
+                {
+                    encontrado = 1;
+                    break;
+                }
+            }
+            if (!encontrado)
+            {
+                pthread_mutex_lock(&mutex); // Bloqueia o mutex antes de imprimir
+                strcpy(total_arquivos[numero_total_arquivos].nome, usuario->arquivos[j].nome);
+                numero_total_arquivos++;
+
+                /*Teste Ausentes*/
+                printf("Arquivos Totais -> %s\n", total_arquivos[numero_total_arquivos].nome);
+
+                pthread_mutex_unlock(&mutex); // Desbloqueia o mutex após imprimir
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 4)
@@ -212,15 +267,16 @@ int main(int argc, char *argv[])
     int tmn_fragmento = atoi(argv[3]);
     int tmn_buffer = atoi(argv[4]);
 
-    if(avaliacao_requisitos(num_usuarios, max_arquivos, tmn_fragmento, tmn_buffer) != 0){
+    if (avaliacao_requisitos(num_usuarios, max_arquivos, tmn_fragmento, tmn_buffer) != 0)
+    {
         return 1;
     }
 
+    arquivos_totais(num_usuarios);
+
     srand(time(0)); // Inicializa a semente de números aleatórios
     pthread_t threads[num_usuarios];
-    Usuario usuarios[num_usuarios];
     ThreadArgs threadArgs[num_usuarios];
-
 
     pthread_mutex_init(&mutex, NULL); // Mutex iniciado
     // Criação das threads dos usuários
@@ -228,6 +284,7 @@ int main(int argc, char *argv[])
     {
         sprintf(usuarios[i].nome, "U%d", i + 1);
         usuarios[i].num_arquivos = 0;
+        usuarios[i].num_ausentes = 0;
 
         threadArgs[i].usuario = &usuarios[i];
         threadArgs[i].tmn_fragmento = tmn_fragmento;
