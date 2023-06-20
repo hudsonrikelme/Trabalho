@@ -1,11 +1,11 @@
-# definindo as variáveis do projeto (MAIN é o nome do arquivo principal, que contem a função main, sem a extensao)
+# definindo as variáveis do projeto (MAIN é o nome do arquivo principal, que contém a função main, sem a extensão)
 MAIN := main
 
 # objetos a serem gerados na compilação
-OBJECTS := main.o
+OBJECTS := $(MAIN).o functions.o
 
 # Flags de compilação para C
-FLAGS := -Wall -Wextra -std=c11 -pedantic-errors -pthread
+FLAGS := -Wall -Wextra -std=c11 -pthread
 
 # necessário apenas quando se incluir a biblioteca <math.h> em algum arquivo fonte no projeto
 MATH := -lm
@@ -23,7 +23,7 @@ else
 endif
 
 # ponto de compilação principal
-all: $(OUTPUTMAIN) 
+all: $(OUTPUTMAIN)
 	@echo Compiling 'all' complete!
 
 # gerando o arquivo executável
@@ -31,8 +31,12 @@ $(OUTPUTMAIN): $(OBJECTS)
 	$(CC) $(FLAGS) $(OBJECTS) -o $(OUTPUTMAIN) $(MATH)
 
 # gerando o arquivo objeto da função principal... adicionar as dependências (se houverem)
-$(OBJECTS): $(MAIN).c
+$(MAIN).o: $(MAIN).c definitions.h functions.h
 	$(CC) $(FLAGS) -c $(MAIN).c
+
+# gerando o arquivo objeto da função functions
+functions.o: functions.c functions.h
+	$(CC) $(FLAGS) -c functions.c
 
 clean:
 	$(RM) $(OBJECTS)
