@@ -42,9 +42,12 @@ typedef struct{
 
 typedef struct
 {
-    Arquivo arquivo[MAX_ARQUIVOS];
-    Usuario *usuario;
-    struct solicitacoes *proximo;
+    Arquivo arquivo;
+    Usuario *usuarioCliente;
+    int iniByte;
+    int finalByte;
+    Usuario usuarioServidor;
+    int statusDaSolicitacao;
 } Solicitacao;
 
 typedef struct
@@ -54,6 +57,10 @@ typedef struct
     int sizeof_buffer;
 }ThreadArgs;
 
+typedef struct
+{
+    Solicitacao solicitacao;
+}ThreadUserArgs;
 
 
 

@@ -10,7 +10,7 @@
 
     extern Usuario usuarios[MAX_USUARIOS];         // vetor com as informações dos usuários 
     extern Arquivo total_arquivos[MAX_ARQUIVOS];   // ver
-    extern Solicitacao solicitacoes;
+    extern Solicitacao solicitacoes[MAX_ARQUIVOS];
 
 
 
@@ -37,5 +37,7 @@
     void *func_DividirArquivo(Usuario *usuarios, int sizeof_fragmento);
 
     void dividirArquivo(const char* arquivo, int sizeof_fragmento);
+
+    void *func_User_Request_Thread(void *arg);
 
 #endif

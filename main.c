@@ -21,9 +21,7 @@
 Usuario usuarios[MAX_USUARIOS];       // vetor com as informações dos usuários
 Arquivo total_arquivos[MAX_ARQUIVOS]; // ver
 ListaDeArquivos listaGeralDeArquivos;
-// pthread_mutex_t mutex;
-
-Solicitacao solicitacoes;
+Solicitacao solicitacoes[MAX_ARQUIVOS];
 
 //==================== INICIO DO PROGRAMA ========================================================
 
