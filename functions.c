@@ -13,7 +13,8 @@
 extern Usuario usuarios[MAX_USUARIOS];       // vetor com as informações dos usuários
 extern Arquivo total_arquivos[MAX_ARQUIVOS]; // ver
 extern ListaDeArquivos listaGeralDeArquivos;
-extern Solicitacao solicitacoes; // Um Usuário realiza a solicitação de 0 ou vários Arquivos
+
+extern Solicitacao solicitacoes[MAX_ARQUIVOS]; // Um Usuário realiza a solicitação de 0 ou vários Arquivos
 pthread_mutex_t mutex;
 
 //--------------------------------------------------------------------------------------------------------------
@@ -327,14 +328,16 @@ void *user_thread(void *arg)
     int sizeof_buffer = args->sizeof_buffer;
     // Thread de Arquivos para solicitação de Arquivos
     pthread_t file_Request_threads[usuario->num_ausentes];
+    ThreadUserArgs threadUserArgs[usuario->num_ausentes];
 
     //-------------------- Divide os arquivos em vários fragmentos-------------------------------------
 
-    pthread_mutex_lock(&mutex);
+    /*pthread_mutex_lock(&mutex);
     func_DividirArquivo(usuario, sizeof_fragmento);
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex);*/
     //-------------------- Usuario Realiza a solicitacao de Arquivos-------------------------------------
     int num_ausentes = usuario->num_ausentes;
+    int counter = 0;
 
     while (num_ausentes >= 0)
     {
@@ -348,7 +351,7 @@ void *user_thread(void *arg)
             else
             {
                 pthread_mutex_lock(&mutex);
-                printf("    >>>> %d Arquivo solicitado pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+                printf(">>>> %d Arquivo solicitado pelo usuario [%s]\n", num_solicitacao, usuario->nome);
                 pthread_mutex_unlock(&mutex);
                 break;
             }
@@ -358,10 +361,45 @@ void *user_thread(void *arg)
             num_solicitacao = num_ausentes;
         }
         pthread_mutex_lock(&mutex);
-        printf("    >>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+        printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+
+        for(int i = 0; i < num_solicitacao; i++){
+            
+        }
+
         num_ausentes -= num_solicitacao;
         pthread_mutex_unlock(&mutex);
+
+        /*Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
+        for (int i = 0; i < num_solicitacao; i++)
+        {
+            int frag = solicitacoes[i].arquivo.tamanho / sizeof_buffer;
+            solicitacoes[i].arquivo = usuario->ausentes[counter];
+            solicitacoes[i].usuarioCliente = usuario;
+
+            solicitacoes[i].iniByte = 0;
+            solicitacoes[i].finalByte = sizeof_buffer;
+            solicitacoes[i].statusDaSolicitacao = 0;
+            for (int j = 0; j < frag; j++)
+            {
+
+                pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
+            }
+
+            counter++;
+        }
+        num_ausentes -= num_solicitacao;
+
+        pthread_mutex_unlock(&mutex);
+        // Aguardar o término das threads de solicitação
+        for (int i = 0; i < num_ausentes; i++)
+        {
+            pthread_join(file_Request_threads[i], NULL);
+        }
+        free(solicitacoes);*/
     }
+
+    // pthread_mutex_destroy(&mutex); // Destroi o mutex
     return NULL;
 }
 
@@ -382,8 +420,6 @@ void *func_DividirArquivo(Usuario *usuarios, int sizeof_fragmento)
         }
 
         arquivo.numeroDeFragmentos = num_fragmentos;
-
-
     }
     return NULL;
 }
@@ -452,4 +488,20 @@ void dividirArquivo(const char *arquivo, int sizeof_fragmento)
 
     free(buffer);
     fclose(arquivo_origem);
+}
+
+//--------------------------------------------------------------------------------------------------------------
+//      F011-Função chamada para Solicitar os Fragmentos de Um Arquivo
+//--------------------------------------------------------------------------------------------------------------
+
+void *func_User_Request_Thread(void *arg)
+{
+    ThreadUserArgs *args = (ThreadUserArgs *)arg;
+    Solicitacao solicitacao = args->solicitacao;
+
+    pthread_mutex_lock(&mutex);
+    printf("[%s] Solicita o Arquivo -> %s\n", solicitacao.usuarioCliente->nome, solicitacao.arquivo.nome);
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
 }
