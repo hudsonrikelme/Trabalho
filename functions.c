@@ -282,7 +282,7 @@ void report_initial_status(int num_usuarios, Usuario *usuarios)
     for (int z = 0; z < num_usuarios; z++)
     {
 
-        printf("\n\n >>>O usuario %d tem %d arquivos ausentes \n", z + 1, usuarios[z].num_ausentes);
+        printf("\n\n >>>O usuario %d tem %d arquivos ausentes \n\n", z + 1, usuarios[z].num_ausentes);
 
         for (int k = 0; k < usuarios[z].num_ausentes; k++)
         {
@@ -330,11 +330,8 @@ void *user_thread(void *arg)
     pthread_t file_Request_threads[usuario->num_ausentes];
     ThreadUserArgs threadUserArgs[usuario->num_ausentes];
 
-    //-------------------- Divide os arquivos em vários fragmentos-------------------------------------
 
-    /*pthread_mutex_lock(&mutex);
-    func_DividirArquivo(usuario, sizeof_fragmento);
-    pthread_mutex_unlock(&mutex);*/
+
     //-------------------- Usuario Realiza a solicitacao de Arquivos-------------------------------------
     int num_ausentes = usuario->num_ausentes;
     int counter = 0;
@@ -361,133 +358,26 @@ void *user_thread(void *arg)
             num_solicitacao = num_ausentes;
         }
         pthread_mutex_lock(&mutex);
+        //>>>>>>>>>>>>>>>>>Teste Quantidade de Arquivos Solicitados por cada usuario
         printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+        // pthread_mutex_unlock(&mutex);
 
-        for(int i = 0; i < num_solicitacao; i++){
-            
-        }
-
-        num_ausentes -= num_solicitacao;
-        pthread_mutex_unlock(&mutex);
-
-        /*Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
+        Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
         for (int i = 0; i < num_solicitacao; i++)
         {
-            int frag = solicitacoes[i].arquivo.tamanho / sizeof_buffer;
-            solicitacoes[i].arquivo = usuario->ausentes[counter];
-            solicitacoes[i].usuarioCliente = usuario;
+            inicializaSolicitacao(&threadUserArgs[i]);
+            threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
+            threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
 
-            solicitacoes[i].iniByte = 0;
-            solicitacoes[i].finalByte = sizeof_buffer;
-            solicitacoes[i].statusDaSolicitacao = 0;
-            for (int j = 0; j < frag; j++)
-            {
-
-                pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
-            }
-
+            pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
             counter++;
         }
+
         num_ausentes -= num_solicitacao;
-
         pthread_mutex_unlock(&mutex);
-        // Aguardar o término das threads de solicitação
-        for (int i = 0; i < num_ausentes; i++)
-        {
-            pthread_join(file_Request_threads[i], NULL);
-        }
-        free(solicitacoes);*/
-    }
-
-    // pthread_mutex_destroy(&mutex); // Destroi o mutex
-    return NULL;
-}
-
-//--------------------------------------------------------------------------------------------------------------
-//      F009-Função que está dentro da Thread de Usuário e Divide os Arquivos dos Usuarios em Fragmentos
-//--------------------------------------------------------------------------------------------------------------
-
-void *func_DividirArquivo(Usuario *usuarios, int sizeof_fragmento)
-{
-    for (int i = 0; i < usuarios->num_arquivos; i++)
-    {
-        Arquivo arquivo = usuarios->arquivos[i];
-        int num_fragmentos = arquivo.tamanho / sizeof_fragmento;
-
-        if (arquivo.tamanho % sizeof_fragmento != 0)
-        {
-            num_fragmentos++;
-        }
-
-        arquivo.numeroDeFragmentos = num_fragmentos;
+        free(solicitacoes);
     }
     return NULL;
-}
-
-//--------------------------------------------------------------------------------------------------------------
-//      F010-Função chamada para dividir o arquivo em fragmentos
-//--------------------------------------------------------------------------------------------------------------
-
-void dividirArquivo(const char *arquivo, int sizeof_fragmento)
-{
-    FILE *arquivo_origem = fopen(arquivo, "rb");
-    if (arquivo_origem == NULL)
-    {
-        printf("Não foi possível abrir o arquivo %s.\n", arquivo);
-        return;
-    }
-
-    // Obter o tamanho total do arquivo
-    fseek(arquivo_origem, 0, SEEK_END);
-    long tamanho_arquivo = ftell(arquivo_origem);
-    fseek(arquivo_origem, 0, SEEK_SET);
-
-    // Verificar se o arquivo precisa ser dividido
-    if (tamanho_arquivo <= sizeof_fragmento)
-    {
-        printf("O arquivo é menor ou igual ao tamanho máximo especificado. Nenhuma divisão necessária.\n");
-        fclose(arquivo_origem);
-        return;
-    }
-
-    // Criar o buffer para armazenar os dados do fragmento
-    char *buffer = (char *)malloc(sizeof_fragmento);
-    if (buffer == NULL)
-    {
-        printf("Falha ao alocar memória para o buffer do fragmento.\n");
-        fclose(arquivo_origem);
-        return;
-    }
-
-    int fragmento_num = 1;
-    int bytes_lidos;
-
-    // Ler e gravar os fragmentos do arquivo
-    while ((bytes_lidos = fread(buffer, sizeof(char), sizeof_fragmento, arquivo_origem)) > 0)
-    {
-        // Criar o nome do arquivo de fragmento
-        char nome_fragmento[50];
-        sprintf(nome_fragmento, "%s_fragmento%d", arquivo, fragmento_num);
-
-        FILE *arquivo_fragmento = fopen(nome_fragmento, "wb");
-        if (arquivo_fragmento == NULL)
-        {
-            printf("Nao foi possível criar o arquivo de fragmento %s.\n", nome_fragmento);
-            free(buffer);
-            fclose(arquivo_origem);
-            return;
-        }
-
-        // Gravar o fragmento no arquivo
-        fwrite(buffer, sizeof(char), bytes_lidos, arquivo_fragmento);
-        fclose(arquivo_fragmento);
-
-        printf("Fragmento %d criado: %s\n", fragmento_num, nome_fragmento);
-        fragmento_num++;
-    }
-
-    free(buffer);
-    fclose(arquivo_origem);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -500,8 +390,21 @@ void *func_User_Request_Thread(void *arg)
     Solicitacao solicitacao = args->solicitacao;
 
     pthread_mutex_lock(&mutex);
-    printf("[%s] Solicita o Arquivo -> %s\n", solicitacao.usuarioCliente->nome, solicitacao.arquivo.nome);
+    printf("Usuario %s solicita o arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo);
     pthread_mutex_unlock(&mutex);
 
     return NULL;
+}
+
+void inicializaSolicitacao(void *arg)
+{
+    ThreadUserArgs *args = (ThreadUserArgs *)arg;
+    Solicitacao solicitacao = args->solicitacao;
+
+    solicitacao.nomeDoSolicitante = "dummy";
+    solicitacao.nomeDoArquivo = "dummy";
+    solicitacao.iniByte = 0;
+    solicitacao.finalbyte = 0;
+    solicitacao.statusDaSolicitacao = 0;
+    solicitacao.nomeDoServidor = "dummy";
 }

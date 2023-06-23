@@ -14,7 +14,6 @@
 
 typedef struct{
     char nome[MAX_NOME_ARQUIVO];        // Vetor guarda o nome do arquivo
-    int fragmentos[1000];
     long int tamanho;                   // inteiro longo que guarda o tamanho do arquivo   
     int numeroDeFragmentos;             // inteiro que guarda o numero de fragmentos, de acordo com o tamanho do buffer
 } Arquivo;
@@ -40,6 +39,8 @@ typedef struct{
 
 } Usuario;
 
+/*
+Versão Minha
 typedef struct
 {
     Arquivo arquivo;
@@ -48,7 +49,25 @@ typedef struct
     int finalByte;
     Usuario usuarioServidor;
     int statusDaSolicitacao;
-} Solicitacao;
+} Solicitacao;*/
+
+typedef struct{
+
+    char* nomeDoSolicitante ;
+    char* nomeDoArquivo; 
+    int iniByte;
+    int finalbyte;
+    char* nomeDoServidor;
+    int statusDaSolicitacao;
+
+}Solicitacao;
+
+typedef struct ListNode{
+
+    Solicitacao slct;
+    struct ListNode* next;
+
+}ListNode;
 
 typedef struct
 {

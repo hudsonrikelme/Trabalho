@@ -21,7 +21,11 @@
 Usuario usuarios[MAX_USUARIOS];       // vetor com as informações dos usuários
 Arquivo total_arquivos[MAX_ARQUIVOS]; // ver
 ListaDeArquivos listaGeralDeArquivos;
-Solicitacao solicitacoes[MAX_ARQUIVOS];
+//Solicitacao solicitacoes[MAX_ARQUIVOS];
+ListNode* nodoZero;     //Declaração da Lista de Solicitações do alg
+
+ListNode* listHead=NULL;    //Inicializa o nodoZero da lista de solicitações
+
 
 //==================== INICIO DO PROGRAMA ========================================================
 

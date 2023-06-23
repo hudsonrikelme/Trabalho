@@ -34,10 +34,8 @@
 
     void *user_thread(void *arg);
 
-    void *func_DividirArquivo(Usuario *usuarios, int sizeof_fragmento);
-
-    void dividirArquivo(const char* arquivo, int sizeof_fragmento);
-
     void *func_User_Request_Thread(void *arg);
+
+    void inicializaSolicitacao(void *arg);
 
 #endif
