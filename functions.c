@@ -193,6 +193,8 @@ void func_ArquivosAusentes(int num_usuarios, Usuario *usuarios)
 
                 // copia para a lista de arquivos ausentes do usuario Z
                 strcpy(usuarios[z].ausentes[usuarios[z].num_ausentes].nome, listaGeralDeArquivos.itens[w].nome);
+                // Copia o tamanho do arquivo para ausentes
+                usuarios[z].ausentes[usuarios[z].num_ausentes].tamanho = listaGeralDeArquivos.itens[w].tamanho;
                 usuarios[z].num_ausentes += 1; // incrementa o contador de arquivos ausents do usuario Z
             }
         }
@@ -330,8 +332,6 @@ void *user_thread(void *arg)
     pthread_t file_Request_threads[usuario->num_ausentes];
     ThreadUserArgs threadUserArgs[usuario->num_ausentes];
 
-
-
     //-------------------- Usuario Realiza a solicitacao de Arquivos-------------------------------------
     int num_ausentes = usuario->num_ausentes;
     int counter = 0;
@@ -359,17 +359,28 @@ void *user_thread(void *arg)
         }
         pthread_mutex_lock(&mutex);
         //>>>>>>>>>>>>>>>>>Teste Quantidade de Arquivos Solicitados por cada usuario
-        printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+        //printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
         // pthread_mutex_unlock(&mutex);
 
         Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
         for (int i = 0; i < num_solicitacao; i++)
         {
             inicializaSolicitacao(&threadUserArgs[i]);
-            threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
-            threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
+            int frag = usuario->ausentes[counter].tamanho / sizeof_buffer;
+            int counter_IniByte = 0;
+            int counter_FinalByte = frag;
+            for (int j = 0; j < frag; i++)
+            {
+                threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
+                threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
+                threadUserArgs[j].solicitacao.iniByte = counter_IniByte;
+                threadUserArgs[j].solicitacao.finalbyte = counter_FinalByte;
+                //pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
+                counter_IniByte = counter_FinalByte;
+                counter_FinalByte = counter_IniByte + frag;
+                
+            }
 
-            pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
             counter++;
         }
 
@@ -381,7 +392,7 @@ void *user_thread(void *arg)
 }
 
 //--------------------------------------------------------------------------------------------------------------
-//      F011-Função chamada para Solicitar os Fragmentos de Um Arquivo
+//      F009-Função chamada para Solicitar os fragmentos de um arquivo
 //--------------------------------------------------------------------------------------------------------------
 
 void *func_User_Request_Thread(void *arg)
@@ -390,11 +401,15 @@ void *func_User_Request_Thread(void *arg)
     Solicitacao solicitacao = args->solicitacao;
 
     pthread_mutex_lock(&mutex);
-    printf("Usuario %s solicita o arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo);
+    printf("Usuario %s solicita o fragmento entre %d e %d do arquivo: \n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
     pthread_mutex_unlock(&mutex);
 
     return NULL;
 }
+
+//--------------------------------------------------------------------------------------------------------------
+//      F010-Função que inicializa a struct Solicitação
+//--------------------------------------------------------------------------------------------------------------
 
 void inicializaSolicitacao(void *arg)
 {
