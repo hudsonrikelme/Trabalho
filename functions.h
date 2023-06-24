@@ -32,10 +32,14 @@ void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buff
 
 void *user_thread(void *arg);
 
+void shuffleArray(int* array, int size);
+
 void *func_User_Request_Thread(void *arg);
 
 void inicializaSolicitacao(void *arg);
 
 void inserirNodo(ListNode** N, Solicitacao solicitacao);
+
+void printList(ListNode *head);
 
 #endif

@@ -370,12 +370,23 @@ void *user_thread(void *arg)
         for (int i = 0; i < num_solicitacao; i++)
         {
             inicializaSolicitacao(&threadUserArgs[i]);
+            int frag = usuario->ausentes[counter].tamanho / sizeof_buffer + (usuario->ausentes[counter].tamanho % sizeof_buffer != 0);
+            int counter_IniByte = 0;
+            int counter_FinalByte = sizeof_buffer;
 
             threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
             threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
             threadUserArgs[i].tamanhoArquivo = usuario->ausentes[counter].tamanho;
             threadUserArgs[i].sizeof_buffer = sizeof_buffer;
-            pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
+            for (int j = 0; j < frag; j++)
+            {
+                threadUserArgs[j].solicitacao.iniByte = counter_IniByte;
+                threadUserArgs[j].solicitacao.finalbyte = counter_FinalByte;
+                pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
+                counter_IniByte = threadUserArgs[j].solicitacao.finalbyte;
+                counter_FinalByte = counter_FinalByte + sizeof_buffer;
+            }
+
             counter++;
         }
         pthread_mutex_unlock(&mutex);
@@ -396,27 +407,15 @@ void *func_User_Request_Thread(void *arg)
     Solicitacao solicitacao = args->solicitacao;
     int tamanhoArquivo = args->tamanhoArquivo;
     int sizeof_Buffer = args->sizeof_buffer;
-    int frag = tamanhoArquivo / sizeof_Buffer + (tamanhoArquivo % sizeof_Buffer != 0);
-    int counter_IniByte = 0;
-    int counter_FinalByte = sizeof_Buffer;
 
     pthread_mutex_lock(&mutex);
-    printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
-    printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);
+    /*printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
+    printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);*/
 
-    for (int i = 0; i < frag; i++)
-    {
-        solicitacao.iniByte = counter_IniByte;
-        solicitacao.finalbyte = counter_FinalByte;
-        printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
-        ListNode *nodo = NULL;
-        inserirNodo(&nodo, solicitacao);
+    printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
+    ListNode *nodo = NULL;
+    inserirNodo(&nodo, solicitacao);
 
-        
-
-        counter_IniByte = solicitacao.finalbyte;
-        counter_FinalByte = counter_FinalByte + sizeof_Buffer;
-    }
     printList(listHead);
 
     pthread_mutex_unlock(&mutex);
@@ -447,7 +446,7 @@ void inicializaSolicitacao(void *arg)
 
 //---------------------Função para inserir um elemento no início da lista--------------------------------------
 
-void inserirNodo(ListNode** N, Solicitacao solicitacao)
+void inserirNodo(ListNode **N, Solicitacao solicitacao)
 {
 
     // Argumentos da função são:
@@ -457,8 +456,8 @@ void inserirNodo(ListNode** N, Solicitacao solicitacao)
     ListNode *newNode = (ListNode *)malloc(sizeof(ListNode)); // Cria um novo ponteiro para um espaço de memoria equivalente a um ListNode
 
     newNode->slct = solicitacao; // ao membro solicitacao do endereço apontado por newNode é atribuido o valor da solicitação slct passada nos argumentos da função
-    newNode->next = listHead;    // o ponteiro do nó é apontado para a atual cabeça da lista
-    N = newNode;                 // o espaço de memoria N assume o papel de nova cabeça de lista.
+    newNode->next = *N;    // o ponteiro do nó é apontado para a atual cabeça da lista
+    *N = newNode;                 // o espaço de memoria N assume o papel de nova cabeça de lista.
 
     listHead = newNode;
     // return newNode;
