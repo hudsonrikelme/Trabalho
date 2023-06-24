@@ -30,9 +30,9 @@ void func_fileSize(int num_usuarios, Usuario *usuarios);
 
 void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buffer, int num_usuarios);
 
-void *user_thread(void *arg);
-
 void shuffleArray(int* array, int size);
+
+void *user_thread(void *arg);
 
 void *func_User_Request_Thread(void *arg);
 

@@ -16,11 +16,10 @@ extern ListaDeArquivos listaGeralDeArquivos;
 
 extern Solicitacao solicitacoes[MAX_ARQUIVOS]; // Um Usuário realiza a solicitação de 0 ou vários Arquivos
 pthread_mutex_t mutex;
-
 ListNode *nodoZero; // declaração da lista de solicitações do alg
 
-ListNode *listHead = NULL; // inicializa o nodoZero da lista de solicitações
-
+ListNode *listHead = NULL;        // inicializa o nodoZero da lista de solicitações
+ListNode *listHeadReverse = NULL; // inicializa o nodoZero da lista de solicitações invertida
 //--------------------------------------------------------------------------------------------------------------
 //      F001-Função que avalia a validade dos argumentos fornecido ao main
 //--------------------------------------------------------------------------------------------------------------
@@ -316,6 +315,8 @@ void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buff
         threadArgs[i].sizeof_buffer = sizeof_buffer;
         pthread_create(&threads[i], NULL, user_thread, &threadArgs[i]);
     }
+    // Impressão da lista encadeada OBSSERVAR QUE AS SOLICITAÇÕES ESTÃO INDO DO FINAL DO ARQUIVO PARA O INICIO
+    //printList(listHead);
     for (int i = 0; i < num_usuarios; i++)
     {
         pthread_join(threads[i], NULL);
@@ -340,23 +341,15 @@ void *user_thread(void *arg)
     int num_ausentes = usuario->num_ausentes;
     int counter = 0;
 
-    while (num_ausentes >= 0)
+    int* ausentes_indices = (int*)malloc(num_ausentes * sizeof(int));
+    for(int i = 0; i < num_ausentes; i++){
+        ausentes_indices[i] = i;
+    }
+    shuffleArray(ausentes_indices, num_ausentes);
+
+    while (num_ausentes > 0)
     {
         int num_solicitacao = rand() % (num_ausentes + 1);
-        if (num_solicitacao == 0)
-        {
-            if (num_ausentes > 0)
-            {
-                num_solicitacao = rand() % (num_ausentes + 1);
-            }
-            else
-            {
-                pthread_mutex_lock(&mutex);
-                printf(">>>> %d Arquivo solicitado pelo usuario [%s]\n", num_solicitacao, usuario->nome);
-                pthread_mutex_unlock(&mutex);
-                break;
-            }
-        }
         if (num_solicitacao > num_ausentes)
         {
             printf("Numero de Solicitações é maior que o de ausentes");
@@ -366,35 +359,39 @@ void *user_thread(void *arg)
         //>>>>>>>>>>>>>>>>>Teste Quantidade de Arquivos Solicitados por cada usuario
         printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
         // pthread_mutex_unlock(&mutex);
-        Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
         for (int i = 0; i < num_solicitacao; i++)
         {
             inicializaSolicitacao(&threadUserArgs[i]);
-            int frag = usuario->ausentes[counter].tamanho / sizeof_buffer + (usuario->ausentes[counter].tamanho % sizeof_buffer != 0);
-            int counter_IniByte = 0;
-            int counter_FinalByte = sizeof_buffer;
 
             threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
             threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
             threadUserArgs[i].tamanhoArquivo = usuario->ausentes[counter].tamanho;
             threadUserArgs[i].sizeof_buffer = sizeof_buffer;
-            for (int j = 0; j < frag; j++)
-            {
-                threadUserArgs[j].solicitacao.iniByte = counter_IniByte;
-                threadUserArgs[j].solicitacao.finalbyte = counter_FinalByte;
-                pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
-                counter_IniByte = threadUserArgs[j].solicitacao.finalbyte;
-                counter_FinalByte = counter_FinalByte + sizeof_buffer;
-            }
-
+            pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
             counter++;
         }
         pthread_mutex_unlock(&mutex);
         num_ausentes = num_ausentes - num_solicitacao;
-
-        free(solicitacoes);
     }
+    for(int i = 0; i < num_ausentes;i++){
+            pthread_join(file_Request_threads[i], NULL);
+        }
+        free(ausentes_indices);
     return NULL;
+}
+//--------------------------------------------------------------------------------------------------------------
+//      F009-Função para embaralhar um array de inteiros usando o algoritmo de Fisher-Yates
+//--------------------------------------------------------------------------------------------------------------
+
+
+void shuffleArray(int* array, int size) {
+
+    for (int i = size - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -407,18 +404,31 @@ void *func_User_Request_Thread(void *arg)
     Solicitacao solicitacao = args->solicitacao;
     int tamanhoArquivo = args->tamanhoArquivo;
     int sizeof_Buffer = args->sizeof_buffer;
+    int frag = (tamanhoArquivo / sizeof_Buffer) + (tamanhoArquivo % sizeof_Buffer != 0);
+    int counter_IniByte = 0;
+    int counter_FinalByte = sizeof_Buffer;
 
-    pthread_mutex_lock(&mutex);
-    /*printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
-    printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);*/
+    //pthread_mutex_lock(&mutex);
+    //printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
+    //printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);
+    //pthread_mutex_unlock(&mutex);
+    for (int i = 0; i < frag; i++)
+    {
+        solicitacao.iniByte = counter_IniByte;
+        solicitacao.finalbyte = counter_FinalByte;
+        pthread_mutex_lock(&mutex);
+        printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
+        
 
-    printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
-    ListNode *nodo = NULL;
-    inserirNodo(&nodo, solicitacao);
+        inserirNodo(&listHead, solicitacao);
+        pthread_mutex_unlock(&mutex);
+        counter_IniByte = solicitacao.finalbyte;
+        counter_FinalByte = counter_FinalByte + sizeof_Buffer;
+    }
+    
 
-    printList(listHead);
-
-    pthread_mutex_unlock(&mutex);
+    // INVERSÃO DA LISTA; UMA NOVA LISTA "listHeadReverse" É CRIADA COM A SEQUENCIA DAS SOLICITAÇÕES NA ORDEM CORRETA
+    //ReverseList(listHead, listHeadReverse);
 
     return NULL;
 }
@@ -456,8 +466,8 @@ void inserirNodo(ListNode **N, Solicitacao solicitacao)
     ListNode *newNode = (ListNode *)malloc(sizeof(ListNode)); // Cria um novo ponteiro para um espaço de memoria equivalente a um ListNode
 
     newNode->slct = solicitacao; // ao membro solicitacao do endereço apontado por newNode é atribuido o valor da solicitação slct passada nos argumentos da função
-    newNode->next = *N;    // o ponteiro do nó é apontado para a atual cabeça da lista
-    *N = newNode;                 // o espaço de memoria N assume o papel de nova cabeça de lista.
+    newNode->next = listHead;    // o ponteiro do nó é apontado para a atual cabeça da lista
+    *N = newNode;                // o espaço de memoria N assume o papel de nova cabeça de lista.
 
     listHead = newNode;
     // return newNode;
@@ -468,7 +478,7 @@ void printList(ListNode *head)
 {
 
     ListNode *current = head;
-
+    pthread_mutex_lock(&mutex);
     printf("\n\n Solicitações da lista encadeada \n\n");
 
     while (current != NULL)
@@ -481,4 +491,5 @@ void printList(ListNode *head)
         current = current->next;
     }
     printf("\n");
+    pthread_mutex_unlock(&mutex);
 }
