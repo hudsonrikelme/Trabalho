@@ -17,6 +17,10 @@ extern ListaDeArquivos listaGeralDeArquivos;
 extern Solicitacao solicitacoes[MAX_ARQUIVOS]; // Um Usuário realiza a solicitação de 0 ou vários Arquivos
 pthread_mutex_t mutex;
 
+ListNode *nodoZero; // declaração da lista de solicitações do alg
+
+ListNode *listHead = NULL; // inicializa o nodoZero da lista de solicitações
+
 //--------------------------------------------------------------------------------------------------------------
 //      F001-Função que avalia a validade dos argumentos fornecido ao main
 //--------------------------------------------------------------------------------------------------------------
@@ -355,37 +359,28 @@ void *user_thread(void *arg)
         }
         if (num_solicitacao > num_ausentes)
         {
+            printf("Numero de Solicitações é maior que o de ausentes");
             num_solicitacao = num_ausentes;
         }
         pthread_mutex_lock(&mutex);
         //>>>>>>>>>>>>>>>>>Teste Quantidade de Arquivos Solicitados por cada usuario
-        //printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
+        printf(">>>> %d Arquivos solicitados pelo usuario [%s]\n", num_solicitacao, usuario->nome);
         // pthread_mutex_unlock(&mutex);
-
         Solicitacao *solicitacoes = (Solicitacao *)malloc(num_solicitacao * sizeof(Solicitacao));
         for (int i = 0; i < num_solicitacao; i++)
         {
             inicializaSolicitacao(&threadUserArgs[i]);
-            int frag = usuario->ausentes[counter].tamanho / sizeof_buffer;
-            int counter_IniByte = 0;
-            int counter_FinalByte = frag;
-            for (int j = 0; j < frag; i++)
-            {
-                threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
-                threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
-                threadUserArgs[j].solicitacao.iniByte = counter_IniByte;
-                threadUserArgs[j].solicitacao.finalbyte = counter_FinalByte;
-                //pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
-                counter_IniByte = counter_FinalByte;
-                counter_FinalByte = counter_IniByte + frag;
-                
-            }
 
+            threadUserArgs[i].solicitacao.nomeDoArquivo = usuario->ausentes[counter].nome;
+            threadUserArgs[i].solicitacao.nomeDoSolicitante = usuario->nome;
+            threadUserArgs[i].tamanhoArquivo = usuario->ausentes[counter].tamanho;
+            threadUserArgs[i].sizeof_buffer = sizeof_buffer;
+            pthread_create(&file_Request_threads[i], NULL, func_User_Request_Thread, &threadUserArgs[i]);
             counter++;
         }
-
-        num_ausentes -= num_solicitacao;
         pthread_mutex_unlock(&mutex);
+        num_ausentes = num_ausentes - num_solicitacao;
+
         free(solicitacoes);
     }
     return NULL;
@@ -399,9 +394,31 @@ void *func_User_Request_Thread(void *arg)
 {
     ThreadUserArgs *args = (ThreadUserArgs *)arg;
     Solicitacao solicitacao = args->solicitacao;
+    int tamanhoArquivo = args->tamanhoArquivo;
+    int sizeof_Buffer = args->sizeof_buffer;
+    int frag = tamanhoArquivo / sizeof_Buffer + (tamanhoArquivo % sizeof_Buffer != 0);
+    int counter_IniByte = 0;
+    int counter_FinalByte = sizeof_Buffer;
 
     pthread_mutex_lock(&mutex);
-    printf("Usuario %s solicita o fragmento entre %d e %d do arquivo: \n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
+    printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
+    printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);
+
+    for (int i = 0; i < frag; i++)
+    {
+        solicitacao.iniByte = counter_IniByte;
+        solicitacao.finalbyte = counter_FinalByte;
+        printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
+        ListNode *nodo = NULL;
+        inserirNodo(&nodo, solicitacao);
+
+        
+
+        counter_IniByte = solicitacao.finalbyte;
+        counter_FinalByte = counter_FinalByte + sizeof_Buffer;
+    }
+    printList(listHead);
+
     pthread_mutex_unlock(&mutex);
 
     return NULL;
@@ -422,4 +439,47 @@ void inicializaSolicitacao(void *arg)
     solicitacao.finalbyte = 0;
     solicitacao.statusDaSolicitacao = 0;
     solicitacao.nomeDoServidor = "dummy";
+}
+
+//--------------------------------------------------------------------------------------------------------------
+//      F011-Função relacionada à lista encadeada de solicitações
+//--------------------------------------------------------------------------------------------------------------
+
+//---------------------Função para inserir um elemento no início da lista--------------------------------------
+
+void inserirNodo(ListNode** N, Solicitacao solicitacao)
+{
+
+    // Argumentos da função são:
+    //   N.......do tipo ponteiro para ListNode: Representa o novo nó da lista.
+    //   solicitacao....do tipo Solicitação: carrega a solicitação que deve ser armanezada no nó N.
+
+    ListNode *newNode = (ListNode *)malloc(sizeof(ListNode)); // Cria um novo ponteiro para um espaço de memoria equivalente a um ListNode
+
+    newNode->slct = solicitacao; // ao membro solicitacao do endereço apontado por newNode é atribuido o valor da solicitação slct passada nos argumentos da função
+    newNode->next = listHead;    // o ponteiro do nó é apontado para a atual cabeça da lista
+    N = newNode;                 // o espaço de memoria N assume o papel de nova cabeça de lista.
+
+    listHead = newNode;
+    // return newNode;
+}
+//-------------------Função para percorrer e imprimir os elementos da lista----------------------------------
+
+void printList(ListNode *head)
+{
+
+    ListNode *current = head;
+
+    printf("\n\n Solicitações da lista encadeada \n\n");
+
+    while (current != NULL)
+    {
+
+        printf(" Solicitação do cliente %s.\n", current->slct.nomeDoSolicitante);
+        printf(" Fragamentos de bytes solicitados: do %d ao %d.\n", current->slct.iniByte, current->slct.finalbyte);
+        printf(" Arquivo de origem: %s.\n\n", current->slct.nomeDoArquivo);
+
+        current = current->next;
+    }
+    printf("\n");
 }

@@ -79,6 +79,8 @@ typedef struct
 typedef struct
 {
     Solicitacao solicitacao;
+    int tamanhoArquivo;
+    int sizeof_buffer;
 }ThreadUserArgs;
 
 
