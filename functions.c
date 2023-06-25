@@ -316,7 +316,7 @@ void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buff
         pthread_create(&threads[i], NULL, user_thread, &threadArgs[i]);
     }
     // Impressão da lista encadeada OBSSERVAR QUE AS SOLICITAÇÕES ESTÃO INDO DO FINAL DO ARQUIVO PARA O INICIO
-    // printList(listHead);
+    printList(listHead);
     for (int i = 0; i < num_usuarios; i++)
     {
         pthread_join(threads[i], NULL);
@@ -381,8 +381,11 @@ void *user_thread(void *arg)
     }
 
     //-------------------- Usuario Realiza o envio de Arquivos-------------------------------------
+
     pthread_mutex_lock(&mutex);
+
     atenderSolicitacoes(*usuario, listHead, sizeof_buffer);
+
     pthread_mutex_unlock(&mutex);
 
     free(ausentes_indices);
@@ -514,48 +517,43 @@ void atenderSolicitacoes(Usuario user, ListNode *head, long int frag_Size)
     while (current != NULL)
     {
 
-        printf("\npassou1\n");
         char *requestedFile = current->slct.nomeDoArquivo; // extrai da solicitação o nome do arquivo procurado
 
         if (current->slct.statusDaSolicitacao == 0)
         { // Avalia se a solicitação já não foi atendida
 
-            printf("passou2\n");
             for (int i = 0; i < user.num_arquivos; i++)
             { // Caso não tenha sido atendida, é feito um loop sobre os arquivos que o usuario tem
 
-                printf("passou3\n");
                 if (strcmp(requestedFile, user.arquivos->nome) == 0)
                 { // avalia se o usuario chamado tem o arquivo
-                    printf("passou4\n");
+
                     current->slct.statusDaSolicitacao = 1;    // em caso positivo altera-se o status da solicitação
                     current->slct.nomeDoServidor = user.nome; // Coloca na solicitação o nome do usuario que fornece o fragmento do arquivo
-                    printf("passou5\n");
+
                     //--------------------------------------------------------------------------------------------
                     //      Extração das informações da solicitação para a função que copia o fragmento
                     //--------------------------------------------------------------------------------------------
-                    printf("passou6\n");
+
                     char *dir_origem = user.nome;                    // Extrai o nome do diretório de origem
                     strcat(dir_origem, "/");                         // concatenação do dir_origem com "/"
                     strcat(dir_origem, current->slct.nomeDoArquivo); // concatenação do "dir_origem/" com o nome do arquivo
 
-                    printf("passou7\n");
                     char *dir_destino = current->slct.nomeDoSolicitante; // Extrai o nome do diretório de destino
                     //             printf("%s",dir_destino);
-                    printf("passou7a\n");
+
                     printf("%s", dir_destino);
                     strcat(dir_destino, "/"); // concatenação do dir_destino com "/"
-                    printf("passou7b\n");
+
                     strcat(dir_destino, current->slct.nomeDoArquivo); // concatenação do "dir_origem/" com o nome do arquivo
-                    printf("passou8\n");
 
                     int pos_ini = current->slct.iniByte;     // Extrai a posição inicial do fragmento
                     int pos_final = current->slct.finalbyte; // Extrai a posição final do fragmento
 
                     //----------Chamada da função para copiar os fragmentos do arquivo------------
-                    printf("passou9\n");
+
                     moveFragmentToFile(dir_origem, pos_ini, frag_Size, dir_destino);
-                    printf("passou10\n");
+
                     printf("\n\n");
                     printf("fragmento do file %s copiado de %spara %s. Intervalo de bytes %d - %d \n", current->slct.nomeDoArquivo, dir_origem, dir_destino, pos_ini, pos_final);
 

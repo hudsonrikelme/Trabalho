@@ -21,8 +21,7 @@
 Usuario usuarios[MAX_USUARIOS];       // vetor com as informações dos usuários
 Arquivo total_arquivos[MAX_ARQUIVOS]; // ver
 ListaDeArquivos listaGeralDeArquivos;
-//Solicitacao solicitacoes[MAX_ARQUIVOS];
-
+// Solicitacao solicitacoes[MAX_ARQUIVOS];
 
 //==================== INICIO DO PROGRAMA ========================================================
 
@@ -71,7 +70,6 @@ int main(int argc, char *argv[])
     //------------------------- Criação das Threads de Usuarios -----------------------------------------
 
     thread_user_create(usuarios, sizeof_fragmento, sizeof_buffer, num_usuarios);
-
 
     return (0);
 }
