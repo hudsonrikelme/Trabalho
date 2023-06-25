@@ -316,7 +316,7 @@ void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buff
         pthread_create(&threads[i], NULL, user_thread, &threadArgs[i]);
     }
     // Impressão da lista encadeada OBSSERVAR QUE AS SOLICITAÇÕES ESTÃO INDO DO FINAL DO ARQUIVO PARA O INICIO
-    //printList(listHead);
+    // printList(listHead);
     for (int i = 0; i < num_usuarios; i++)
     {
         pthread_join(threads[i], NULL);
@@ -341,10 +341,12 @@ void *user_thread(void *arg)
     int num_ausentes = usuario->num_ausentes;
     int counter = 0;
 
-    int* ausentes_indices = (int*)malloc(num_ausentes * sizeof(int));
-    for(int i = 0; i < num_ausentes; i++){
+    int *ausentes_indices = (int *)malloc(num_ausentes * sizeof(int));
+    for (int i = 0; i < num_ausentes; i++)
+    {
         ausentes_indices[i] = i;
     }
+
     shuffleArray(ausentes_indices, num_ausentes);
 
     while (num_ausentes > 0)
@@ -373,20 +375,28 @@ void *user_thread(void *arg)
         pthread_mutex_unlock(&mutex);
         num_ausentes = num_ausentes - num_solicitacao;
     }
-    for(int i = 0; i < num_ausentes;i++){
-            pthread_join(file_Request_threads[i], NULL);
-        }
-        free(ausentes_indices);
+    for (int i = 0; i < num_ausentes; i++)
+    {
+        pthread_join(file_Request_threads[i], NULL);
+    }
+
+    //-------------------- Usuario Realiza o envio de Arquivos-------------------------------------
+    pthread_mutex_lock(&mutex);
+    atenderSolicitacoes(*usuario, listHead, sizeof_buffer);
+    pthread_mutex_unlock(&mutex);
+
+    free(ausentes_indices);
     return NULL;
 }
 //--------------------------------------------------------------------------------------------------------------
 //      F009-Função para embaralhar um array de inteiros usando o algoritmo de Fisher-Yates
 //--------------------------------------------------------------------------------------------------------------
 
+void shuffleArray(int *array, int size)
+{
 
-void shuffleArray(int* array, int size) {
-
-    for (int i = size - 1; i > 0; i--) {
+    for (int i = size - 1; i > 0; i--)
+    {
         int j = rand() % (i + 1);
         int temp = array[i];
         array[i] = array[j];
@@ -408,27 +418,25 @@ void *func_User_Request_Thread(void *arg)
     int counter_IniByte = 0;
     int counter_FinalByte = sizeof_Buffer;
 
-    //pthread_mutex_lock(&mutex);
-    //printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
-    //printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);
-    //pthread_mutex_unlock(&mutex);
+    // pthread_mutex_lock(&mutex);
+    // printf("Usuario %s solicita o arquivo: %s, de tamanho: %d bytes\n", solicitacao.nomeDoSolicitante, solicitacao.nomeDoArquivo, tamanhoArquivo);
+    // printf("Tamanho do Buffer: %d, com %d fragmentos\n", sizeof_Buffer, frag);
+    // pthread_mutex_unlock(&mutex);
     for (int i = 0; i < frag; i++)
     {
         solicitacao.iniByte = counter_IniByte;
         solicitacao.finalbyte = counter_FinalByte;
         pthread_mutex_lock(&mutex);
         printf("[%s] Solicitacao do fragmento (%d - %d) do Arquivo: %s\n", solicitacao.nomeDoSolicitante, solicitacao.iniByte, solicitacao.finalbyte, solicitacao.nomeDoArquivo);
-        
 
         inserirNodo(&listHead, solicitacao);
         pthread_mutex_unlock(&mutex);
         counter_IniByte = solicitacao.finalbyte;
         counter_FinalByte = counter_FinalByte + sizeof_Buffer;
     }
-    
 
     // INVERSÃO DA LISTA; UMA NOVA LISTA "listHeadReverse" É CRIADA COM A SEQUENCIA DAS SOLICITAÇÕES NA ORDEM CORRETA
-    //ReverseList(listHead, listHeadReverse);
+    // ReverseList(listHead, listHeadReverse);
 
     return NULL;
 }
@@ -492,4 +500,139 @@ void printList(ListNode *head)
     }
     printf("\n");
     pthread_mutex_unlock(&mutex);
+}
+
+//--------------------------------------------------------------------------------------------------------------
+//      F011-Função que atende a solicitações de fragmentos de arquivos
+//--------------------------------------------------------------------------------------------------------------
+
+void atenderSolicitacoes(Usuario user, ListNode *head, long int frag_Size)
+{
+
+    ListNode *current = head;
+
+    while (current != NULL)
+    {
+
+        printf("\npassou1\n");
+        char *requestedFile = current->slct.nomeDoArquivo; // extrai da solicitação o nome do arquivo procurado
+
+        if (current->slct.statusDaSolicitacao == 0)
+        { // Avalia se a solicitação já não foi atendida
+
+            printf("passou2\n");
+            for (int i = 0; i < user.num_arquivos; i++)
+            { // Caso não tenha sido atendida, é feito um loop sobre os arquivos que o usuario tem
+
+                printf("passou3\n");
+                if (strcmp(requestedFile, user.arquivos->nome) == 0)
+                { // avalia se o usuario chamado tem o arquivo
+                    printf("passou4\n");
+                    current->slct.statusDaSolicitacao = 1;    // em caso positivo altera-se o status da solicitação
+                    current->slct.nomeDoServidor = user.nome; // Coloca na solicitação o nome do usuario que fornece o fragmento do arquivo
+                    printf("passou5\n");
+                    //--------------------------------------------------------------------------------------------
+                    //      Extração das informações da solicitação para a função que copia o fragmento
+                    //--------------------------------------------------------------------------------------------
+                    printf("passou6\n");
+                    char *dir_origem = user.nome;                    // Extrai o nome do diretório de origem
+                    strcat(dir_origem, "/");                         // concatenação do dir_origem com "/"
+                    strcat(dir_origem, current->slct.nomeDoArquivo); // concatenação do "dir_origem/" com o nome do arquivo
+
+                    printf("passou7\n");
+                    char *dir_destino = current->slct.nomeDoSolicitante; // Extrai o nome do diretório de destino
+                    //             printf("%s",dir_destino);
+                    printf("passou7a\n");
+                    printf("%s", dir_destino);
+                    strcat(dir_destino, "/"); // concatenação do dir_destino com "/"
+                    printf("passou7b\n");
+                    strcat(dir_destino, current->slct.nomeDoArquivo); // concatenação do "dir_origem/" com o nome do arquivo
+                    printf("passou8\n");
+
+                    int pos_ini = current->slct.iniByte;     // Extrai a posição inicial do fragmento
+                    int pos_final = current->slct.finalbyte; // Extrai a posição final do fragmento
+
+                    //----------Chamada da função para copiar os fragmentos do arquivo------------
+                    printf("passou9\n");
+                    moveFragmentToFile(dir_origem, pos_ini, frag_Size, dir_destino);
+                    printf("passou10\n");
+                    printf("\n\n");
+                    printf("fragmento do file %s copiado de %spara %s. Intervalo de bytes %d - %d \n", current->slct.nomeDoArquivo, dir_origem, dir_destino, pos_ini, pos_final);
+
+                    current->slct.statusDaSolicitacao = 2; // Atualização do status da solicitação
+                }
+            }
+        }
+
+        current = current->next;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------------
+//      F008-Função que copia um fragmento de um arquivo de dir para outro
+//--------------------------------------------------------------------------------------------------------------
+
+int moveFragmentToFile(char *dir_origem, int posicaoInicial, int bufferSize, char *dir_destino)
+{
+
+    //-----------------------Definição dos ponteiros de arquivo e abertura dos arquivos-----------------
+
+    // Atenção:
+    // O endereço fornecido deve estar no formato "UX/fileY.csv"
+
+    // printf("o endereco  origem eh %s\n",dir_origem);
+    // printf("o endereco  destino eh %s\n\n",dir_destino);
+
+    FILE *fp_source = NULL; // Ponteiro para o arquivo de entrada de dados
+    FILE *fp_dest = NULL;   // Ponteiro para o arquivo de saída de dados
+
+    fp_source = fopen(dir_origem, "rb");
+    if (fp_source == NULL)
+    {
+        printf("Não foi possível abrir o arquivo de leitura.\n");
+        return 1;
+    }
+
+    fp_dest = fopen(dir_destino, "ab");
+    if (fp_dest == NULL)
+    {
+        printf("Não foi possível abrir o arquivo de saída.\n");
+        fclose(fp_dest);
+        return 1;
+    }
+
+    //-----------------------colocando o cursor na posição desejada do arquivo de origem-----------------
+
+    fseek(fp_source, posicaoInicial, SEEK_SET);
+
+    //----------------------alocação de espaço de memória para o buffer----------------------------------------
+
+    int size = bufferSize;
+
+    char *buffer = malloc(sizeof(char) * size); // Alocação de espaço no heap
+
+    if (buffer == NULL)
+    {
+        printf("Erro ao alocar memória para o buffer.\n");
+        fclose(fp_source);
+        fclose(fp_dest);
+        return 1;
+    }
+    //----------------------leitura e armazenamento no buffer----------------------------------------------------
+
+    fread(buffer, sizeof(char), size, fp_source);
+
+    // printf("%s\n",buffer);  // teste para conferir no console o que está sendo copiado
+
+    //----------------------escrita no arquivo de destino-------------------------------------------------------
+
+    fwrite(buffer, sizeof(char), size, fp_dest);
+
+    //----------------------fechamento dos arquivos e liberação do espaço do buffer-------------------------------
+
+    fclose(fp_source);
+    fclose(fp_dest);
+    free(buffer);
+
+    return 0;
 }

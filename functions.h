@@ -30,7 +30,7 @@ void func_fileSize(int num_usuarios, Usuario *usuarios);
 
 void thread_user_create(Usuario *usuarios, int sizeof_fragmento, int sizeof_buffer, int num_usuarios);
 
-void shuffleArray(int* array, int size);
+void shuffleArray(int *array, int size);
 
 void *user_thread(void *arg);
 
@@ -38,8 +38,12 @@ void *func_User_Request_Thread(void *arg);
 
 void inicializaSolicitacao(void *arg);
 
-void inserirNodo(ListNode** N, Solicitacao solicitacao);
+void inserirNodo(ListNode **N, Solicitacao solicitacao);
 
 void printList(ListNode *head);
+
+void atenderSolicitacoes(Usuario user, ListNode *head, long int frag_Size);
+
+int moveFragmentToFile(char *dir_origem, int posicaoInicial, int bufferSize, char *dir_destino);
 
 #endif
